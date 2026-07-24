@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PinIt — Find what's happening on your street</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --night: #0C0E14;
+      --ink: #13161F;
+      --card: #181B26;
+      --border: #252938;
+      --orange: #F97316;
+      --orange-dim: #7C3A0E;
+      --blue: #3B82F6;
+      --blue-dim: #1E3A6E;
+      --muted: #4A4F66;
+      --text: #E8EAF2;
+      --sub: #8B90A8;
+      --white: #FFFFFF;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--night);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(12, 14, 20, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--white);
+      letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--blue); }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a {
+      color: var(--sub);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--orange);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 20px;
+      border-radius: 24px;
+      text-decoration: none;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 92vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding: 80px 5% 60px;
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .hero-glow-orange {
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%);
+      top: -100px; left: -100px;
+      pointer-events: none;
+    }
+    .hero-glow-blue {
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(59,130,246,0.10) 0%, transparent 70%);
+      bottom: 0; right: 10%;
+      pointer-events: none;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 680px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--orange-dim);
+      background: rgba(249,115,22,0.08);
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 24px;
+      margin-bottom: 28px;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(42px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 1.02;
+      letter-spacing: -2px;
+      color: var(--white);
+      margin-bottom: 24px;
+    }
+    .hero h1 .o { color: var(--orange); }
+    .hero h1 .b { color: var(--blue); }
+    .hero-sub {
+      font-size: 18px;
+      color: var(--sub);
+      max-width: 520px;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--orange);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 32px;
+      border-radius: 32px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.15s;
+      display: inline-block;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 14px 28px;
+      border-radius: 32px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      transition: border-color 0.2s, transform 0.15s;
+      display: inline-block;
+    }
+    .btn-ghost:hover { border-color: var(--muted); transform: translateY(-1px); }
+
+    /* ── MAP PREVIEW ── */
+    .map-preview {
+      position: absolute;
+      right: 4%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: clamp(300px, 38%, 480px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      z-index: 2;
+    }
+    .map-bar {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .map-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .map-search {
+      flex: 1;
+      background: var(--night);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .map-body { position: relative; height: 280px; background: #141828; }
+    .map-pin-card {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .pin-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    .pin-name { font-size: 13px; font-weight: 700; color: var(--white); }
+    .pin-meta { font-size: 11px; color: var(--sub); margin-top: 1px; }
+    .pin-rating { margin-left: auto; font-size: 12px; color: var(--orange); font-weight: 700; }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 5%;
+      display: flex;
+      gap: 0;
+    }
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 0 20px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -1px;
+    }
+    .stat-val .accent { color: var(--orange); }
+    .stat-lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+    /* ── SECTIONS ── */
+    section { padding: 80px 5%; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px;
+      color: var(--sub);
+      max-width: 540px;
+      line-height: 1.6;
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 48px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: var(--muted); transform: translateY(-3px); }
+    .feature-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    .feature-icon.orange { background: rgba(249,115,22,0.12); }
+    .feature-icon.blue { background: rgba(59,130,246,0.12); }
+    .feature-icon.green { background: rgba(34,197,94,0.12); }
+    .feature-icon.purple { background: rgba(167,139,250,0.12); }
+    .feature-title { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .feature-text { font-size: 14px; color: var(--sub); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .how-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      margin-top: 48px;
+    }
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex;
+      gap: 20px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .step.active .step-num {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+    }
+    .step-body {}
+    .step-title { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .step-text { font-size: 14px; color: var(--sub); line-height: 1.5; }
+    .phone-mock {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 16px;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+    .phone-screen {
+      background: var(--ink);
+      border-radius: 20px;
+      height: 420px;
+      overflow: hidden;
+      position: relative;
+    }
+    .phone-screen-map {
+      width: 100%; height: 100%;
+      position: relative;
+    }
+
+    /* ── PIN TYPES ── */
+    .pin-types {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 48px;
+    }
+    .pin-type-card {
+      border-radius: 16px;
+      padding: 32px 28px;
+      border: 1px solid;
+    }
+    .pin-type-card.vendor {
+      background: rgba(249,115,22,0.05);
+      border-color: var(--orange-dim);
+    }
+    .pin-type-card.worker {
+      background: rgba(59,130,246,0.05);
+      border-color: var(--blue-dim);
+    }
+    .pin-type-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .pin-type-sub { font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.5; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+    .tag.orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+    .tag.blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+
+    /* ── TECH STACK ── */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .tech-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .tech-item:hover { border-color: var(--muted); }
+    .tech-name { font-size: 13px; font-weight: 700; color: var(--white); margin-top: 8px; }
+    .tech-role { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .tech-dot {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      margin: 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap { display: flex; flex-direction: column; gap: 0; margin-top: 40px; position: relative; }
+    .roadmap::before {
+      content: '';
+      position: absolute;
+      left: 11px; top: 12px; bottom: 12px;
+      width: 1px;
+      background: var(--border);
+    }
+    .roadmap-item { display: flex; gap: 20px; padding: 16px 0; position: relative; }
+    .roadmap-dot {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--night);
+      flex-shrink: 0;
+      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .roadmap-dot.done { background: var(--orange); border-color: var(--orange); }
+    .roadmap-dot.active { background: var(--blue); border-color: var(--blue); }
+    .roadmap-dot-inner { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+    .roadmap-content {}
+    .roadmap-phase { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .roadmap-title { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .roadmap-items-list { font-size: 13px; color: var(--sub); }
+
+    /* ── CTA ── */
+    .cta-section {
+      text-align: center;
+      padding: 100px 5%;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(249,115,22,0.08) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .cta-section h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(30px, 5vw, 52px);
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .cta-section p {
+      font-size: 17px;
+      color: var(--sub);
+      margin-bottom: 36px;
+      position: relative;
+    }
+    .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--white);
+      letter-spacing: -0.5px;
+    }
+    .footer-logo span { color: var(--blue); }
+    .footer-copy { font-size: 13px; color: var(--muted); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .map-preview { display: none; }
+      .how-wrap { grid-template-columns: 1fr; }
+      .pin-types { grid-template-columns: 1fr; }
+      nav .nav-links { display: none; }
+      .stats-strip { flex-wrap: wrap; }
+      .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding: 16px 0; }
+      .stat-item:last-child { border-bottom: none; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">Pin<span>It</span></div>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#stack">Tech stack</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+    </ul>
+    <a href="https://github.com" class="nav-cta">View on GitHub</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow-orange"></div>
+    <div class="hero-glow-blue"></div>
+
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        In development · South Africa
+      </div>
+      <h1>Find what's<br>happening on<br>your <span class="o">street</span>.</h1>
+      <p class="hero-sub">
+        PinIt is a crowdsourced map app that connects South Africans to street vendors and informal workers nearby — built by the community, for the community.
+      </p>
+      <div class="hero-actions">
+        <a href="https://github.com" class="btn-primary">Star on GitHub</a>
+        <a href="#features" class="btn-ghost">Learn more</a>
+      </div>
+    </div>
+
+    <!-- MAP PREVIEW -->
+    <div class="map-preview">
+      <div class="map-bar">
+        <div class="map-dot" style="background:#F97316"></div>
+        <div class="map-dot" style="background:#3B82F6"></div>
+        <input class="map-search" readonly value="Soweto, Johannesburg" />
+      </div>
+      <div class="map-body">
+        <svg width="100%" height="280" viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+          <rect width="320" height="280" fill="#141828"/>
+          <line x1="0" y1="70" x2="320" y2="70" stroke="#1E2235" stroke-width="1"/>
+          <line x1="0" y1="140" x2="320" y2="140" stroke="#1E2235" stroke-width="1"/>
+          <line x1="0" y1="210" x2="320" y2="210" stroke="#1E2235" stroke-width="1"/>
+          <line x1="80" y1="0" x2="80" y2="280" stroke="#1E2235" stroke-width="1"/>
+          <line x1="160" y1="0" x2="160" y2="280" stroke="#1E2235" stroke-width="1"/>
+          <line x1="240" y1="0" x2="240" y2="280" stroke="#1E2235" stroke-width="1"/>
+          <rect x="30" y="80" width="90" height="40" rx="3" fill="#1A1F30"/>
+          <rect x="140" y="50" width="120" height="25" rx="3" fill="#1A1F30"/>
+          <rect x="170" y="100" width="80" height="60" rx="3" fill="#1A1F30"/>
+          <rect x="30" y="150" width="60" height="50" rx="3" fill="#1A1F30"/>
+          <rect x="240" y="80" width="70" height="80" rx="3" fill="#1A1F30"/>
+          <!-- orange vendor pins -->
+          <g transform="translate(75,72)">
+            <path d="M0,-20 C-8,-20 -13,-13 -13,-8 C-13,3 0,16 0,16 C0,16 13,3 13,-8 C13,-13 8,-20 0,-20 Z" fill="#F97316"/>
+            <circle cx="0" cy="-8" r="5.5" fill="white" opacity="0.95"/>
+          </g>
+          <g transform="translate(200,43)">
+            <path d="M0,-20 C-8,-20 -13,-13 -13,-8 C-13,3 0,16 0,16 C0,16 13,3 13,-8 C13,-13 8,-20 0,-20 Z" fill="#F97316"/>
+            <circle cx="0" cy="-8" r="5.5" fill="white" opacity="0.95"/>
+          </g>
+          <g transform="translate(55,143)">
+            <path d="M0,-20 C-8,-20 -13,-13 -13,-8 C-13,3 0,16 0,16 C0,16 13,3 13,-8 C13,-13 8,-20 0,-20 Z" fill="#F97316"/>
+            <circle cx="0" cy="-8" r="5.5" fill="white" opacity="0.95"/>
+          </g>
+          <!-- blue worker pins -->
+          <g transform="translate(265,72)">
+            <path d="M0,-20 C-8,-20 -13,-13 -13,-8 C-13,3 0,16 0,16 C0,16 13,3 13,-8 C13,-13 8,-20 0,-20 Z" fill="#3B82F6"/>
+            <circle cx="0" cy="-8" r="5.5" fill="white" opacity="0.95"/>
+          </g>
+          <g transform="translate(215,165)">
+            <path d="M0,-20 C-8,-20 -13,-13 -13,-8 C-13,3 0,16 0,16 C0,16 13,3 13,-8 C13,-13 8,-20 0,-20 Z" fill="#3B82F6"/>
+            <circle cx="0" cy="-8" r="5.5" fill="white" opacity="0.95"/>
+          </g>
+          <!-- roaming zone -->
+          <circle cx="215" cy="165" r="35" fill="rgba(59,130,246,0.08)" stroke="#3B82F6" stroke-width="1" stroke-dasharray="4 3"/>
+          <!-- user location -->
+          <circle cx="160" cy="140" r="16" fill="rgba(59,130,246,0.12)" stroke="none"/>
+          <circle cx="160" cy="140" r="7" fill="#3B82F6"/>
+          <circle cx="160" cy="140" r="3.5" fill="white"/>
+          <!-- callout -->
+          <rect x="82" y="30" width="108" height="26" rx="5" fill="#1E2235" stroke="#F97316" stroke-width="1"/>
+          <text x="136" y="47" text-anchor="middle" fill="#F97316" font-size="10.5" font-family="Space Grotesk, Arial" font-weight="700">Joe's Chakalaka</text>
+        </svg>
+        <div class="map-pin-card">
+          <div class="pin-icon orange" style="background:rgba(249,115,22,0.15)">🛒</div>
+          <div>
+            <div class="pin-name">Joe's Chakalaka</div>
+            <div class="pin-meta">Food vendor · Cash &amp; card</div>
+          </div>
+          <div class="pin-rating">★ 4.8</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat-item">
+      <div class="stat-val">2<span class="accent">+</span></div>
+      <div class="stat-lbl">Pin types</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">11<span class="accent">+</span></div>
+      <div class="stat-lbl">SA languages</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">iOS <span class="accent">&</span> Android</div>
+      <div class="stat-lbl">Both stores</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">Free<span class="accent">.</span></div>
+      <div class="stat-lbl">Always</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Everything your street needs</h2>
+    <p class="section-sub">One app to find food stalls, skilled workers, and everything in between — wherever you are in Mzansi.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon orange">📍</div>
+        <div class="feature-title">Live map pins</div>
+        <div class="feature-text">See vendors and workers pinned in real time on a full map view. Filter by type, category, or payment method in one tap.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon blue">🔵</div>
+        <div class="feature-title">Fixed &amp; roaming locations</div>
+        <div class="feature-text">Vendors can mark a permanent spot. Workers like plumbers or cleaners can set a roaming zone — a shaded area showing where they operate.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green">📸</div>
+        <div class="feature-title">Stall photos</div>
+        <div class="feature-text">Vendors upload photos of their stall so you can spot them easily. Reviewers can add photos too — making every pin richer over time.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon purple">⭐</div>
+        <div class="feature-title">Community reviews</div>
+        <div class="feature-text">Rate and review any pin. Leave comments so your neighbours know what to expect before they walk over.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon orange">👤</div>
+        <div class="feature-title">Claim your pin</div>
+        <div class="feature-text">Vendors and workers can claim community-added pins and take ownership — update details, add photos, and respond to reviews.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon blue">🌍</div>
+        <div class="feature-title">South African languages</div>
+        <div class="feature-text">Built with support for isiZulu, isiXhosa, Afrikaans, Sesotho, Setswana and more — the app speaks your language.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" style="background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Simple for everyone</h2>
+    <div class="how-wrap">
+      <div class="steps">
+        <div class="step active">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Open the map</div>
+            <div class="step-text">Launch PinIt and see all vendors and workers near your current location instantly.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Tap a pin</div>
+            <div class="step-text">See photos, categories, payment methods, operating hours, and community reviews.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Add or claim a pin</div>
+            <div class="step-text">Spotted a vendor not on the map? Add them. If you are the vendor, claim your pin and keep it up to date.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Leave a review</div>
+            <div class="step-text">Share your experience so the next person knows exactly what to expect.</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-mock">
+        <div class="phone-screen">
+          <svg width="100%" height="420" viewBox="0 0 228 420" xmlns="http://www.w3.org/2000/svg">
+            <rect width="228" height="420" fill="#141828"/>
+            <!-- grid -->
+            <line x1="0" y1="105" x2="228" y2="105" stroke="#1A1F2E" stroke-width="0.5"/>
+            <line x1="0" y1="210" x2="228" y2="210" stroke="#1A1F2E" stroke-width="0.5"/>
+            <line x1="0" y1="315" x2="228" y2="315" stroke="#1A1F2E" stroke-width="0.5"/>
+            <line x1="57" y1="0" x2="57" y2="420" stroke="#1A1F2E" stroke-width="0.5"/>
+            <line x1="114" y1="0" x2="114" y2="420" stroke="#1A1F2E" stroke-width="0.5"/>
+            <line x1="171" y1="0" x2="171" y2="420" stroke="#1A1F2E" stroke-width="0.5"/>
+            <!-- blocks -->
+            <rect x="20" y="55" width="80" height="30" rx="3" fill="#1A1F30"/>
+            <rect x="120" y="35" width="90" height="20" rx="3" fill="#1A1F30"/>
+            <rect x="130" y="75" width="60" height="45" rx="3" fill="#1A1F30"/>
+            <rect x="20" y="110" width="50" height="40" rx="3" fill="#1A1F30"/>
+            <rect x="168" y="55" width="50" height="65" rx="3" fill="#1A1F30"/>
+            <!-- pins -->
+            <g transform="translate(58,48)">
+              <path d="M0,-14 C-5.5,-14 -9,-9 -9,-5.5 C-9,2 0,11 0,11 C0,11 9,2 9,-5.5 C9,-9 5.5,-14 0,-14 Z" fill="#F97316"/>
+              <circle cx="0" cy="-5.5" r="3.5" fill="white" opacity="0.9"/>
+            </g>
+            <g transform="translate(152,28)">
+              <path d="M0,-14 C-5.5,-14 -9,-9 -9,-5.5 C-9,2 0,11 0,11 C0,11 9,2 9,-5.5 C9,-9 5.5,-14 0,-14 Z" fill="#F97316"/>
+              <circle cx="0" cy="-5.5" r="3.5" fill="white" opacity="0.9"/>
+            </g>
+            <g transform="translate(42,102)">
+              <path d="M0,-14 C-5.5,-14 -9,-9 -9,-5.5 C-9,2 0,11 0,11 C0,11 9,2 9,-5.5 C9,-9 5.5,-14 0,-14 Z" fill="#3B82F6"/>
+              <circle cx="0" cy="-5.5" r="3.5" fill="white" opacity="0.9"/>
+            </g>
+            <g transform="translate(190,48)">
+              <path d="M0,-14 C-5.5,-14 -9,-9 -9,-5.5 C-9,2 0,11 0,11 C0,11 9,2 9,-5.5 C9,-9 5.5,-14 0,-14 Z" fill="#3B82F6"/>
+              <circle cx="0" cy="-5.5" r="3.5" fill="white" opacity="0.9"/>
+            </g>
+            <!-- roaming -->
+            <circle cx="42" cy="102" r="26" fill="rgba(59,130,246,0.07)" stroke="#3B82F6" stroke-width="0.75" stroke-dasharray="3 2"/>
+            <!-- user -->
+            <circle cx="114" cy="140" r="11" fill="rgba(59,130,246,0.12)"/>
+            <circle cx="114" cy="140" r="5" fill="#3B82F6"/>
+            <circle cx="114" cy="140" r="2.5" fill="white"/>
+            <!-- search bar -->
+            <rect x="12" y="10" width="204" height="26" rx="7" fill="#1E2437" stroke="#252938" stroke-width="0.5"/>
+            <text x="114" y="27" text-anchor="middle" fill="#4A4F66" font-size="10" font-family="Space Grotesk, Arial">Soweto, Johannesburg</text>
+            <!-- callout -->
+            <rect x="62" y="16" width="95" height="20" rx="4" fill="#1E2437" stroke="#F97316" stroke-width="0.75"/>
+            <text x="109" y="30" text-anchor="middle" fill="#F97316" font-size="8.5" font-family="Space Grotesk, Arial" font-weight="700">Joe's Chakalaka</text>
+            <!-- bottom card -->
+            <rect x="0" y="310" width="228" height="110" rx="0" fill="#181B26"/>
+            <line x1="0" y1="310" x2="228" y2="310" stroke="#252938" stroke-width="0.5"/>
+            <rect x="12" y="322" width="30" height="30" rx="8" fill="rgba(249,115,22,0.15)"/>
+            <text x="27" y="343" text-anchor="middle" font-size="14">🛒</text>
+            <text x="52" y="336" fill="#E8EAF2" font-size="11" font-family="Space Grotesk, Arial" font-weight="700">Joe's Chakalaka</text>
+            <text x="52" y="349" fill="#4A4F66" font-size="9" font-family="Space Grotesk, Arial">Food vendor · Cash &amp; card</text>
+            <text x="210" y="336" text-anchor="end" fill="#F97316" font-size="11" font-family="Space Grotesk, Arial" font-weight="700">★ 4.8</text>
+            <rect x="12" y="362" width="204" height="30" rx="8" fill="#F97316"/>
+            <text x="114" y="382" text-anchor="middle" fill="white" font-size="11" font-family="Space Grotesk, Arial" font-weight="700">View pin details</text>
+            <!-- tab bar -->
+            <rect x="0" y="396" width="228" height="24" fill="#13161F"/>
+            <line x1="0" y1="396" x2="228" y2="396" stroke="#252938" stroke-width="0.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIN TYPES -->
+  <section>
+    <div class="section-label">Pin types</div>
+    <h2 class="section-title">Two kinds of pins, one map</h2>
+    <p class="section-sub">PinIt serves two distinct communities — vendors selling goods and workers offering skills — all discoverable in the same place.</p>
+    <div class="pin-types">
+      <div class="pin-type-card vendor">
+        <div style="font-size:32px; margin-bottom:16px">🛒</div>
+        <div class="pin-type-title">Street vendors</div>
+        <div class="pin-type-sub">Food stalls, clothing, hardware, produce — anything sold from a fixed spot or regular location on the street.</div>
+        <div class="tag-list">
+          <span class="tag orange">Food</span>
+          <span class="tag orange">Clothing</span>
+          <span class="tag orange">Produce</span>
+          <span class="tag orange">Hardware</span>
+          <span class="tag orange">Airtime</span>
+          <span class="tag orange">Crafts</span>
+        </div>
+      </div>
+      <div class="pin-type-card worker">
+        <div style="font-size:32px; margin-bottom:16px">🔧</div>
+        <div class="pin-type-title">Informal workers</div>
+        <div class="pin-type-sub">Plumbers, electricians, cleaners, gardeners — skilled people looking for work, visible in the areas they operate.</div>
+        <div class="tag-list">
+          <span class="tag blue">Plumber</span>
+          <span class="tag blue">Cleaner</span>
+          <span class="tag blue">Gardener</span>
+          <span class="tag blue">Electrician</span>
+          <span class="tag blue">Painter</span>
+          <span class="tag blue">Maid</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section id="stack" style="background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="section-label">Tech stack</div>
+    <h2 class="section-title">Built with modern tools</h2>
+    <p class="section-sub">A single Flutter codebase ships to both Google Play and the App Store, backed by Firebase and Google Maps.</p>
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(59,130,246,0.12); color:#3B82F6; font-size:20px">🐦</div>
+        <div class="tech-name">Flutter</div>
+        <div class="tech-role">UI framework</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(249,115,22,0.12); color:#F97316; font-size:20px">🔥</div>
+        <div class="tech-name">Firebase</div>
+        <div class="tech-role">Backend</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(34,197,94,0.12); color:#22C55E; font-size:20px">🗄️</div>
+        <div class="tech-name">Firestore</div>
+        <div class="tech-role">Database</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(167,139,250,0.12); color:#A78BFA; font-size:20px">🔐</div>
+        <div class="tech-name">Firebase Auth</div>
+        <div class="tech-role">Authentication</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(249,115,22,0.12); color:#F97316; font-size:20px">📦</div>
+        <div class="tech-name">Cloud Storage</div>
+        <div class="tech-role">Photo uploads</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(59,130,246,0.12); color:#3B82F6; font-size:20px">🗺️</div>
+        <div class="tech-name">Google Maps</div>
+        <div class="tech-role">Map &amp; pins</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(34,197,94,0.12); color:#22C55E; font-size:20px">📍</div>
+        <div class="tech-name">Geolocator</div>
+        <div class="tech-role">GPS location</div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-dot" style="background:rgba(167,139,250,0.12); color:#A78BFA; font-size:20px">🌍</div>
+        <div class="tech-name">Flutter i18n</div>
+        <div class="tech-role">SA languages</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <div class="section-label">Roadmap</div>
+    <h2 class="section-title">Where we're headed</h2>
+    <p class="section-sub">PinIt is actively being built. Here's the plan from scaffold to store.</p>
+    <div class="roadmap">
+      <div class="roadmap-item">
+        <div class="roadmap-dot done"><div class="roadmap-dot-inner"></div></div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 1 · Complete</div>
+          <div class="roadmap-title">Project setup</div>
+          <div class="roadmap-items-list">Flutter project · Firebase connected · Google Maps · All packages installed · Package name set</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot active"><div class="roadmap-dot-inner"></div></div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 2 · In progress</div>
+          <div class="roadmap-title">Core app scaffold</div>
+          <div class="roadmap-items-list">Auth flow · Map screen · Add pin screen · Pin detail screen · Browse screen · Profile screen</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot"><div class="roadmap-dot-inner"></div></div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 3</div>
+          <div class="roadmap-title">Full feature build</div>
+          <div class="roadmap-items-list">Reviews · Photo uploads · Claim a pin · Roaming zones · Language support · Moderation tools</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot"><div class="roadmap-dot-inner"></div></div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 4</div>
+          <div class="roadmap-title">Beta testing</div>
+          <div class="roadmap-items-list">Internal testing · Community beta in Mpumalanga and Gauteng · Bug fixes · Performance tuning</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot"><div class="roadmap-dot-inner"></div></div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 5</div>
+          <div class="roadmap-title">Store launch</div>
+          <div class="roadmap-items-list">Google Play Store · Apple App Store · Under Grace Technology Group</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2>Built for Mzansi.<br>Open source. Free forever.</h2>
+    <p>Follow the project on GitHub, contribute, or just star the repo to show support.</p>
+    <div class="cta-actions">
+      <a href="https://github.com" class="btn-primary">Star on GitHub</a>
+      <a href="https://github.com" class="btn-ghost">View source</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Pin<span>It</span></div>
+    <div class="footer-copy">© 2026 Grace Technology Group · Built in South Africa</div>
+    <div class="footer-links">
+      <a href="https://github.com">GitHub</a>
+      <a href="mailto:hello@gracetechgroup.co.za">Contact</a>
+    </div>
+  </footer>
+
+</body>
+</html>
